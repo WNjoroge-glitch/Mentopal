@@ -50,16 +50,38 @@ router.post('/like',async(req,res)=>{
         const response = { liked: likedPost.rows[0].like_id, likes: 0 }
         stmt = 'UPDATE posts SET likes = likes + 1 WHERE post_id = $1 RETURNING likes'
         likedPost = await pool.query(stmt, [postId])
-        res.send(likedPost.rows[0].likes)
-    // response.likes = likedPost.rows[0].likes
-    //return res.status(200).json({ message: 'Post liked', content: response })
+        
+    response.likes = likedPost.rows[0].likes
+    return res.status(200).json({ message: 'Post liked', content: response })
     } catch(err){
         console.log(err)
-        // return res
-        // .status(500)
-        // .json({ message: 'There was an error while liking the post. Please try again later' })
+        return res
+        .status(500)
+        .json({ message: 'There was an error while liking the post. Please try again later' })
 
     }
+
+})
+
+//unlike a post
+router.post('/unlike',async(req,res)=>{
+    const {likeId} = req.body
+
+        try {
+            let stmt = 'DELETE FROM likes WHERE like_id = $1 RETURNING *'
+            let result = await pool.query(stmt, [likeId])
+            stmt = 'UPDATE posts SET likes = likes - 1 WHERE post_id = $1 RETURNING likes'
+            result = await pool.query(stmt, [result.rows[0].post_id])
+            return res.status(200).json({
+              message: 'Post unliked',
+              content: { liked: false, likes: result.rows[0].likes }
+            })
+          } catch (err) {
+            return res
+              .status(500)
+              .json({ message: 'There was an error while unliking the post. PLease try again later' })
+          } 
+    
 
 })
 
@@ -137,8 +159,8 @@ router.get('/comment/:postId',async(req,res)=>{
     // })
     
     // response.commentIds.sort((a,b) => a-b)
-    //res.send(result)
-    res.status(200).json({comments:result.rows})
+    //res.send(response)
+   res.status(200).json({comments:result.rows})
     
 })
 router.get('/timeline',async(req,res)=>{
